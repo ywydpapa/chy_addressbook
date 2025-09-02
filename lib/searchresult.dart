@@ -92,8 +92,8 @@ class _MemberSearchScreenState extends State<MemberSearchScreen> {
     ModalRoute.of(context)?.settings.arguments as String?;
     print('SearchScreen - mclubNo: $mclubNo'); // 디버깅용 출력
     return Scaffold(
-      appBar: AppBar(backgroundColor: Colors.yellow, title: Text('회원 검색')),
-      backgroundColor: Colors.yellow,
+      appBar: AppBar(backgroundColor: Colors.green, title: Text('회원 검색')),
+      backgroundColor: Colors.green,
       body: Column(
         children: [
           Padding(

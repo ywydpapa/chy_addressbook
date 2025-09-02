@@ -44,7 +44,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
     String logoUrl = '${ApiConf.baseUrl}/thumbnails/${widget.clubNo}logo.png';
 
     return Scaffold(
-      backgroundColor: Colors.yellow,
+      backgroundColor: Colors.green,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

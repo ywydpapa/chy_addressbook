@@ -70,8 +70,8 @@ class _ClubListScreenState extends State<ClubListScreen> {
         ModalRoute.of(context)?.settings.arguments as String?;
     print('ClubListScreen - mclubNo: $mclubNo'); // 디버깅용 출력
     return Scaffold(
-      appBar: AppBar(backgroundColor: Colors.yellow, title: Text('클럽 리스트')),
-      backgroundColor: Colors.yellow,
+      appBar: AppBar(backgroundColor: Colors.green, title: Text('기수 리스트')),
+      backgroundColor: Colors.green,
       body: FutureBuilder<List<Club>>(
         future: _clubList,
         builder: (context, snapshot) {

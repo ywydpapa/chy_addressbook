@@ -10,8 +10,8 @@ class ClubDocsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final String? mclubNo = ModalRoute.of(context)?.settings.arguments as String?;
     return Scaffold(
-      appBar: AppBar(backgroundColor: Colors.yellow, title: Text('클럽 문서 목록')),
-      backgroundColor: Colors.yellow,
+      appBar: AppBar(backgroundColor: Colors.green, title: Text('문서 목록')),
+      backgroundColor: Colors.green,
       body:
           mclubNo != null
               ? FutureBuilder<List<Map<String, dynamic>>>(

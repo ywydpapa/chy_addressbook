@@ -62,7 +62,7 @@ class DocViewerScreenState extends State<DocViewerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.yellow,
+        backgroundColor: Colors.green,
         title: Text(htmlTitle), // JSON에서 가져온 타이틀을 표시
         centerTitle: true,
       ),

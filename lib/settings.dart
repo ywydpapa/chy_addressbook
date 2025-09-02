@@ -58,9 +58,9 @@ class _SettingScreenState extends State<SettingScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('데이터 수정요청'),
-        backgroundColor: Colors.yellow,
+        backgroundColor: Colors.green,
       ),
-      backgroundColor: Colors.yellow,
+      backgroundColor: Colors.green,
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(

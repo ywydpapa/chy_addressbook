@@ -99,10 +99,10 @@ class _MemberListScreenState extends State<MemberListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.yellow,
+        backgroundColor: Colors.green,
         title: Text('${widget.clubName} 회원 목록'),
       ),
-      backgroundColor: Colors.yellow,
+      backgroundColor: Colors.green,
       body: Column(
         children: [
           // 검색 입력 필드

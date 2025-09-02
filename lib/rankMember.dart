@@ -94,8 +94,8 @@ class _RankMemberScreenState extends State<RankMemberScreen> {
     ModalRoute.of(context)?.settings.arguments as String?;
     print('RankmemberScreen - mclubNo: $mclubNo'); // 디버깅용 출력
     return Scaffold(
-      appBar: AppBar(backgroundColor: Colors.yellow, title: Text('직책별 회원 리스트')),
-      backgroundColor: Colors.yellow,
+      appBar: AppBar(backgroundColor: Colors.green, title: Text('직책별 회원 리스트')),
+      backgroundColor: Colors.green,
       body: Column(
         children: [
           // 드롭다운 필터
