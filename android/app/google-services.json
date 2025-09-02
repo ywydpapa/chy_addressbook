@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "853890329153",
+    "project_id": "chyaddress",
+    "storage_bucket": "chyaddress.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:853890329153:android:bf3600fa64e6752736f4c0",
+        "android_client_info": {
+          "package_name": "kr.swcore.chy_addressbook"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA5CNptng_FVS_-km0p0Neh8J3l0mm2wpY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
