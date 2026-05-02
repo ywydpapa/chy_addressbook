@@ -105,7 +105,7 @@ class _SettingScreenState extends State<SettingScreen> {
               Padding(
                 padding: const EdgeInsets.only(top: 8.0),
                 child: Text(
-                  '사용자번호가 없습니다. 로그인을 확인해 주세요.',
+                  '사용자아이디가 없습니다. 로그인을 확인해 주세요.',
                   style: TextStyle(color: Colors.red),
                 ),
               ),

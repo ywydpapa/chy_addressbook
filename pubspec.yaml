@@ -96,9 +96,6 @@ flutter:
   #       - asset: fonts/TrajanPro_Bold.ttf
   #         weight: 700
   assets:
-     - assets/default.png
-     - assets/defaultphoto.png
      - assets/loginlogo.png
-     - assets/homeImage.png
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
