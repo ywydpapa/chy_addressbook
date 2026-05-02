@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'classmembers.dart';
 
 class ClassListScreen extends StatefulWidget {
   const ClassListScreen({super.key});
@@ -146,9 +147,17 @@ class _ClassListScreenState extends State<ClassListScreen> {
             // 기간 데이터가 있으면 부제목으로 표시
             trailing: const Icon(Icons.arrow_forward_ios, color: Colors.green),
             onTap: () {
-              // TODO: 해당 기수를 눌렀을 때 상세 명단 화면으로 이동하는 코드 작성
-              // 나중에 classNo를 다음 화면으로 넘겨주어 해당 기수의 회원 목록을 불러오게 됩니다.
-              print('클릭됨: $classTitle (번호: $classNo)');
+              int parsedClassNo = int.tryParse(classNo) ?? 0;
+
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ClassMembersScreen(
+                    classNo: parsedClassNo,
+                    classTitle: classTitle,
+                  ),
+                ),
+              );
             },
           ),
         );
