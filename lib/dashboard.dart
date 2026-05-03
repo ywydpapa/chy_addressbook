@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'classlist.dart';
+import 'rankmembers.dart';
+import 'notices.dart';
+import 'settings.dart';
+import 'wwwview.dart';
+import 'eventlist.dart';
+
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -141,24 +147,50 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     title: '직책별 연락처',
                     icon: Icons.assignment_ind,
                     onTap: () {
-                      // TODO: 직책별 연락처 화면으로 이동
-                      print('직책별 연락처 클릭됨');
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const RankMembersScreen()),
+                      );
                     },
                   ),
                   _buildDashboardButton(
                     title: '공지사항',
                     icon: Icons.campaign,
                     onTap: () {
-                      // TODO: 공지사항 화면으로 이동
-                      print('공지사항 클릭됨');
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const NoticesScreen()),
+                      );
                     },
                   ),
                   _buildDashboardButton(
                     title: '충효예 대학\n홈페이지',
                     icon: Icons.language,
                     onTap: () {
-                      // TODO: 웹뷰나 외부 브라우저로 홈페이지 열기
-                      print('홈페이지 클릭됨');
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const WwwViewScreen()),
+                      );
+                    },
+                  ),
+                  _buildDashboardButton(
+                    title: '행사목록',
+                    icon: Icons.event,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const EventListScreen()),
+                      );
+                    },
+                  ),
+                  _buildDashboardButton(
+                    title: '설정',
+                    icon: Icons.settings,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                      );
                     },
                   ),
                 ],

@@ -53,6 +53,36 @@ class _LoginScreenState extends State<LoginScreen> {
   String _errorMessage = '';
   bool _isLoading = false;
 
+  @override
+  void initState() {
+    super.initState();
+    // 화면이 시작될 때 자동 로그인 여부를 확인합니다.
+    _checkAutoLogin();
+  }
+
+  // ★ 자동 로그인 체크 로직 추가 ★
+  Future<void> _checkAutoLogin() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool isAutoLogin = prefs.getBool('auto_login') ?? false;
+
+    if (isAutoLogin) {
+      String savedId = prefs.getString('saved_id') ?? '';
+      String savedPw = prefs.getString('saved_pw') ?? '';
+
+      if (savedId.isNotEmpty && savedPw.isNotEmpty) {
+        setState(() {
+          _usernameController.text = savedId;
+          _passwordController.text = savedPw;
+        });
+
+        // 화면 렌더링이 끝난 직후 자동으로 로그인 함수를 실행합니다.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _login();
+        });
+      }
+    }
+  }
+
   Future<void> _login() async {
     final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();

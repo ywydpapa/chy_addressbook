@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart'; // 📞 url_launcher 패키지 추가
+import 'package:url_launcher/url_launcher.dart';
 
 class MemberDetailScreen extends StatefulWidget {
   final int memberNo;
@@ -81,9 +81,7 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
     }
   }
 
-  // 📞 전화 걸기 함수
   Future<void> _makePhoneCall(String phoneNumber) async {
-    // 전화번호에서 숫자와 '+' 기호만 남기고 필터링 (예: 010-1234-5678 -> 01012345678)
     final cleanNumber = phoneNumber.replaceAll(RegExp(r'[^0-9+]'), '');
     final Uri launchUri = Uri(
       scheme: 'tel',
@@ -101,7 +99,6 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
     }
   }
 
-  // 전화번호 항목인지 확인하는 함수
   bool _isPhoneNumber(String title) {
     return title.contains('전화') || title.contains('연락처') || title.contains('휴대폰');
   }
@@ -129,15 +126,31 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
     final displayMemberName = _memberDtl?['memberName']?.toString() ?? widget.memberName;
     final displayMemberNo = _memberDtl?['memberNo']?.toString() ?? widget.memberNo.toString();
 
+    // 📸 회원 사진 URL 생성
+    final photoUrl = 'https://chyaddr.chycollege.kr/static/img/members/mphoto_${widget.memberNo}.png';
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          CircleAvatar(
-            radius: 50,
-            backgroundColor: Colors.grey[300],
-            child: const Icon(Icons.person, size: 50, color: Colors.grey),
+          // 📸 프로필 사진 영역 (네트워크 이미지 + 에러 처리)
+          ClipOval(
+            child: Image.network(
+              photoUrl,
+              width: 100,
+              height: 100,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                // 사진이 서버에 없으면 기본 회색 아이콘 표시
+                return Container(
+                  width: 100,
+                  height: 100,
+                  color: Colors.grey[300],
+                  child: const Icon(Icons.person, size: 50, color: Colors.grey),
+                );
+              },
+            ),
           ),
           const SizedBox(height: 16),
           Text(
@@ -191,12 +204,10 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
     return Icons.info_outline;
   }
 
-  // 상세 정보 한 줄을 그려주는 위젯
   Widget _buildInfoRow(String label, String value) {
-    final isPhone = _isPhoneNumber(label); // 전화번호 여부 확인
+    final isPhone = _isPhoneNumber(label);
 
     return InkWell(
-      // 전화번호 항목이면 해당 줄을 탭했을 때도 전화가 걸리도록 설정
       onTap: isPhone ? () => _makePhoneCall(value) : null,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 4.0),
@@ -215,7 +226,6 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
                 ],
               ),
             ),
-            // 📞 전화번호 항목일 경우 우측에 전화 걸기 버튼 추가
             if (isPhone)
               IconButton(
                 icon: const Icon(Icons.call, color: Colors.green),
