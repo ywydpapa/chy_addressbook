@@ -147,6 +147,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         final data = json.decode(utf8.decode(response.bodyBytes));
 
         if (data['result'] == 'ok') {
+          // 정상적으로 처리된 경우
           setState(() {
             _isAttending = !_isAttending;
             _memberCount += _isAttending ? 1 : -1;
@@ -154,12 +155,24 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(_isAttending ? '행사 참석 신청이 완료되었습니다.' : '행사 참석이 취소되었습니다.'),
+              content: Text(data['message'] ?? (_isAttending ? '행사 참석 신청이 완료되었습니다.' : '행사 참석이 취소되었습니다.')),
               backgroundColor: _isAttending ? Colors.green : Colors.redAccent,
             ),
           );
+        } else if (data['result'] == 'already_exists') {
+          // ★ 백엔드에서 이미 등록된 회원이라고 응답한 경우 처리
+          setState(() {
+            _isAttending = true; // 앱 상태를 참석 중으로 동기화
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(data['message'] ?? '이미 참석 등록된 회원입니다.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
         } else {
-          _showError('처리에 실패했습니다. 다시 시도해주세요.');
+          _showError(data['message'] ?? '처리에 실패했습니다. 다시 시도해주세요.');
         }
       } else {
         _showError('서버 오류가 발생했습니다. (${response.statusCode})');

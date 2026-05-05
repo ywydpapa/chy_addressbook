@@ -24,6 +24,7 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
 
   bool _isLoading = true;
   String _errorMessage = '';
+  String _loggedInUserActiveYN = 'N'; // 로그인한 사용자의 활성 상태 저장
 
   @override
   void initState() {
@@ -40,6 +41,9 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String? token = prefs.getString('access_token');
+
+      // 로그인한 사용자의 활성 상태 가져오기 (기본값 N)
+      _loggedInUserActiveYN = prefs.getString('activeYN') ?? 'N';
 
       if (token == null) {
         setState(() {
@@ -129,12 +133,36 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
     // 📸 회원 사진 URL 생성
     final photoUrl = 'https://chyaddr.chycollege.kr/static/img/members/mphoto_${widget.memberNo}.png';
 
+    // ★ 마스킹 레벨에 따른 정보 필터링 로직 ★
+    int maskIndex = 0;
+    if (_memberDtl != null && _memberDtl!['maskIndex'] != null) {
+      maskIndex = int.tryParse(_memberDtl!['maskIndex'].toString()) ?? 0;
+    }
+
+    List<dynamic> filteredInfoList = [];
+
+    if (maskIndex == 3) {
+      filteredInfoList = [];
+    } else if (maskIndex == 2) {
+      filteredInfoList = _memberInfoList.where((info) {
+        final title = info['catTitle']?.toString() ?? '';
+        return _isPhoneNumber(title);
+      }).toList();
+    } else if (maskIndex == 1) {
+      if (_loggedInUserActiveYN == 'ACTIV') {
+        filteredInfoList = List.from(_memberInfoList);
+      } else {
+        filteredInfoList = [];
+      }
+    } else {
+      filteredInfoList = List.from(_memberInfoList);
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // 📸 프로필 사진 영역 (네트워크 이미지 + 에러 처리)
           ClipOval(
             child: Image.network(
               photoUrl,
@@ -142,7 +170,6 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
               height: 100,
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) {
-                // 사진이 서버에 없으면 기본 회색 아이콘 표시
                 return Container(
                   width: 100,
                   height: 100,
@@ -164,14 +191,19 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
           ),
           const SizedBox(height: 30),
           const Divider(thickness: 2),
-
-          if (_memberInfoList.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(20.0),
-              child: Text('등록된 상세 정보가 없습니다.', style: TextStyle(color: Colors.grey)),
+          if (filteredInfoList.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Text(
+                maskIndex == 3 || (maskIndex == 1 && _loggedInUserActiveYN != 'ACTIV')
+                    ? '해당 회원의 설정에 의해 상세 정보가 비공개 처리되었습니다.'
+                    : '등록된 상세 정보가 없습니다.',
+                style: const TextStyle(color: Colors.grey),
+                textAlign: TextAlign.center,
+              ),
             )
           else
-            ..._memberInfoList.map((info) {
+            ...filteredInfoList.map((info) {
               final title = info['catTitle']?.toString() ?? '항목 없음';
               final content = info['infoContents']?.toString() ?? '내용 없음';
 

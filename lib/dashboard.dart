@@ -7,7 +7,6 @@ import 'settings.dart';
 import 'wwwview.dart';
 import 'eventlist.dart';
 
-
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -18,6 +17,8 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   String _memberName = '';
   String _activeYN = '';
+  String _memberNo = '';
+  String _maskIndex = '';
 
   @override
   void initState() {
@@ -31,6 +32,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() {
       _memberName = prefs.getString('memberName') ?? '회원';
       _activeYN = prefs.getString('activeYN') ?? 'N';
+      _memberNo = prefs.getString('memberNo') ?? '';
+      _maskIndex = prefs.getString('maskIndex') ?? '';
     });
   }
 
@@ -41,6 +44,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     await prefs.remove('memberNo');
     await prefs.remove('memberName');
     await prefs.remove('activeYN');
+    await prefs.remove('maskIndex');
 
     if (!mounted) return;
     Navigator.pushReplacementNamed(context, '/login');
@@ -126,7 +130,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             const SizedBox(height: 30),
 
-            // 4개의 메뉴 버튼 (2x2 그리드)
+            // 6개의 메뉴 버튼 (2열 그리드)
             Expanded(
               child: GridView.count(
                 crossAxisCount: 2, // 2열로 배치
@@ -187,9 +191,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     title: '설정',
                     icon: Icons.settings,
                     onTap: () {
+                      // 설정 화면으로 이동할 때 memberNo 전달
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                        MaterialPageRoute(
+                          builder: (context) => SettingsScreen(memberNo: _memberNo, maskIndex: _maskIndex),
+                        ),
                       );
                     },
                   ),

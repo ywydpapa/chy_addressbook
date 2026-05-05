@@ -123,6 +123,7 @@ class _LoginScreenState extends State<LoginScreen> {
         await prefs.setString('memberNo', userInfo['userNo'].toString());
         await prefs.setString('memberName', userInfo['userName'].toString());
         await prefs.setString('activeYN', userInfo['activeYN'].toString());
+        await prefs.setString('maskIndex', userInfo['maskIndex'].toString());
 
         if (!mounted) return;
 
@@ -269,6 +270,7 @@ class _HomeScreenState extends State<HomeScreen> {
     await prefs.remove('memberNo');
     await prefs.remove('memberName');
     await prefs.remove('activeYN');
+    await prefs.remove('maskIndex');
 
     if (!mounted) return;
     Navigator.pushReplacementNamed(context, '/login');
