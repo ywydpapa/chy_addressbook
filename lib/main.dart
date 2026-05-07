@@ -4,8 +4,8 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'firebase_options.dart'; // flutterfire configure 명령어로 생성된 파일
-
+import 'firebase_options.dart';
+import 'dart:io';
 import 'dashboard.dart';
 
 class ApiConf {
@@ -393,4 +393,49 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+}
+
+Future<void> _setupFCM() async {
+  FirebaseMessaging messaging = FirebaseMessaging.instance;
+
+  // 1. 권한 요청
+  NotificationSettings settings = await messaging.requestPermission(
+    alert: true,
+    badge: true,
+    sound: true,
+  );
+  print('사용자 권한 상태: ${settings.authorizationStatus}');
+
+  // ★ [iOS 전용] 앱이 켜져 있을 때도 상단 알림 배너를 띄우도록 설정 ★
+  if (Platform.isIOS) {
+    await messaging.setForegroundNotificationPresentationOptions(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+
+    // ★ [iOS 전용] APNs 토큰이 정상적으로 발급되었는지 확인 ★
+    // APNs 토큰이 없으면 FCM 알림을 받을 수 없습니다.
+    String? apnsToken = await messaging.getAPNSToken();
+    print("APNs 토큰: $apnsToken");
+    if (apnsToken == null) {
+      print("🚨 경고: APNs 토큰을 받지 못했습니다. 잠시 후 다시 시도되거나, 인증서 설정을 다시 확인해야 합니다.");
+    }
+  }
+
+  // 2. FCM 토큰 가져오기
+  String? token = await messaging.getToken();
+  print("FCM 기기 토큰: $token");
+
+  messaging.onTokenRefresh.listen((newToken) async {
+    print("FCM 기기 토큰 갱신: $newToken");
+  });
+
+  // 3. 포그라운드 메시지 수신
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    print('포그라운드에서 메시지 수신: ${message.data}');
+    if (message.notification != null) {
+      print('알림 제목: ${message.notification!.title}');
+    }
+  });
 }
