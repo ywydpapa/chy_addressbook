@@ -2,21 +2,104 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'firebase_options.dart'; // flutterfire configure 명령어로 생성된 파일
 
-// 방금 만든 dashboard.dart 파일을 불러옵니다.
 import 'dashboard.dart';
 
 class ApiConf {
   static const String baseUrl = 'https://chyaddr.chycollege.kr';
 }
 
+// ★ 백그라운드 메시지 처리를 위한 최상위 함수 ★
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  print("백그라운드 메시지 수신: ${message.messageId}");
+}
+
 void main() async {
+  // 비동기 방식으로 main 함수를 실행하기 위해 필수
   WidgetsFlutterBinding.ensureInitialized();
+
+  // ★ Firebase 초기화 ★
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // ★ 백그라운드 메시지 핸들러 등록 ★
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+// FCM 설정을 위해 MyApp을 StatefulWidget으로 변경
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    _setupFCM(); // 앱 시작 시 FCM 설정 실행
+  }
+
+  // ★ FCM 초기 설정 및 권한, 토큰 관리 ★
+  Future<void> _setupFCM() async {
+    FirebaseMessaging messaging = FirebaseMessaging.instance;
+
+    // 1. 알림 권한 요청 (Android 13 이상 및 iOS에서 팝업 발생)
+    NotificationSettings settings = await messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+    print('사용자 권한 상태: ${settings.authorizationStatus}');
+
+    // 2. FCM 기기 토큰 가져오기 (이 토큰을 서버로 전송하여 특정 기기에 알림을 보냅니다)
+    String? token = await messaging.getToken();
+    print("FCM 기기 토큰: $token");
+
+    // 나중에 서버로 토큰을 전송하기 위해 SharedPreferences에 임시 저장할 수도 있습니다.
+    if (token != null) {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString('fcm_token', token);
+    }
+
+    // 토큰이 갱신될 때마다 감지
+    messaging.onTokenRefresh.listen((newToken) async {
+      print("FCM 기기 토큰 갱신: $newToken");
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString('fcm_token', newToken);
+      // TODO: 로그인된 상태라면 갱신된 토큰을 서버(DB)에 업데이트하는 API 호출
+    });
+
+    // 3. 포그라운드(앱 화면을 보고 있을 때) 메시지 수신 처리
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      print('포그라운드에서 메시지 수신: ${message.data}');
+
+      if (message.notification != null) {
+        print('알림 제목: ${message.notification!.title}');
+        print('알림 내용: ${message.notification!.body}');
+
+        // 포그라운드에서는 시스템 알림 팝업이 안 뜨므로 SnackBar로 간단히 표시
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${message.notification!.title}\n${message.notification!.body}'),
+              duration: const Duration(seconds: 3),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +115,6 @@ class MyApp extends StatelessWidget {
       initialRoute: '/login',
       routes: {
         '/login': (context) => const LoginScreen(),
-        // '/' 경로를 기존 HomeScreen에서 DashboardScreen으로 변경합니다.
         '/': (context) => const DashboardScreen(),
       },
     );
@@ -56,11 +138,9 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    // 화면이 시작될 때 자동 로그인 여부를 확인합니다.
     _checkAutoLogin();
   }
 
-  // ★ 자동 로그인 체크 로직 추가 ★
   Future<void> _checkAutoLogin() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool isAutoLogin = prefs.getBool('auto_login') ?? false;
@@ -75,7 +155,6 @@ class _LoginScreenState extends State<LoginScreen> {
           _passwordController.text = savedPw;
         });
 
-        // 화면 렌더링이 끝난 직후 자동으로 로그인 함수를 실행합니다.
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _login();
         });
@@ -117,7 +196,6 @@ class _LoginScreenState extends State<LoginScreen> {
         final String accessToken = data['access_token'];
         final userInfo = data['user_info'];
 
-        // 백엔드에서 넘겨주는 키(userNo, userName, activeYN)를 member 기준으로 저장
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setString('access_token', accessToken);
         await prefs.setString('memberNo', userInfo['userNo'].toString());
@@ -125,9 +203,14 @@ class _LoginScreenState extends State<LoginScreen> {
         await prefs.setString('activeYN', userInfo['activeYN'].toString());
         await prefs.setString('maskIndex', userInfo['maskIndex'].toString());
 
+        // ★ (선택) 로그인 성공 시 서버로 FCM 토큰 전송 로직 추가 가능 ★
+        // String? fcmToken = prefs.getString('fcm_token');
+        // if (fcmToken != null) {
+        //   await _sendTokenToServer(fcmToken, userInfo['userNo']);
+        // }
+
         if (!mounted) return;
 
-        // 로그인 성공 시 메인 홈으로 이동
         Navigator.pushReplacementNamed(context, '/');
       } else if (response.statusCode == 401) {
         final data = json.decode(utf8.decode(response.bodyBytes));
@@ -254,7 +337,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadUserInfo();
   }
 
-  // SharedPreferences에서 member 정보 불러오기
   Future<void> _loadUserInfo() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -263,7 +345,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // 로그아웃 (저장된 정보 모두 삭제)
   Future<void> _logout() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.remove('access_token');
