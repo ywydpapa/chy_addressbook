@@ -20,6 +20,11 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   bool _isProcessing = false; // 참석/취소 API 통신 중 상태
   bool _isLoadingAttendance = true; // 초기 진입 시 참석 여부 확인 중 상태
 
+  // 참가자 목록 관련 상태
+  List<dynamic> _participantList = [];
+  bool _isLoadingParticipants = false;
+  bool _hasFetchedParticipants = false; // API 중복 호출 방지용
+
   @override
   void initState() {
     super.initState();
@@ -115,6 +120,57 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     return dateStr;
   }
 
+  // 참가자 목록 API 호출
+  Future<void> _fetchParticipants() async {
+    if (_hasFetchedParticipants) return; // 이미 불러왔다면 다시 호출하지 않음
+
+    setState(() {
+      _isLoadingParticipants = true;
+    });
+
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? token = prefs.getString('access_token');
+      int eventNo = widget.eventData['eventNo'];
+
+      final url = Uri.parse('https://chyaddr.chycollege.kr/phapp/event_memberlist/$eventNo');
+
+      final response = await http.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(utf8.decode(response.bodyBytes));
+
+        setState(() {
+          // ★ 수정된 부분: 로그 확인 결과 데이터가 'events' 키 안에 들어있음
+          if (data is Map && data.containsKey('events')) {
+            _participantList = data['events'];
+          } else if (data is List) {
+            _participantList = data;
+          } else {
+            _participantList = [];
+          }
+          _hasFetchedParticipants = true;
+        });
+      } else {
+        _showError('참가자 목록을 불러오는데 실패했습니다. (${response.statusCode})');
+      }
+    } catch (e) {
+      _showError('참가자 목록을 불러오는 중 네트워크 오류가 발생했습니다.');
+    } finally {
+      setState(() {
+        _isLoadingParticipants = false;
+      });
+    }
+  }
+
+
+
   Future<void> _toggleAttendance() async {
     if (_memberNo.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -151,6 +207,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           setState(() {
             _isAttending = !_isAttending;
             _memberCount += _isAttending ? 1 : -1;
+            _hasFetchedParticipants = false; // 참석 상태가 변경되었으므로 목록 다시 불러오도록 초기화
           });
 
           ScaffoldMessenger.of(context).showSnackBar(
@@ -160,9 +217,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             ),
           );
         } else if (data['result'] == 'already_exists') {
-          // ★ 백엔드에서 이미 등록된 회원이라고 응답한 경우 처리
           setState(() {
-            _isAttending = true; // 앱 상태를 참석 중으로 동기화
+            _isAttending = true;
           });
 
           ScaffoldMessenger.of(context).showSnackBar(
@@ -244,7 +300,95 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               ),
             ),
 
-            const SizedBox(height: 30),
+            const SizedBox(height: 16),
+
+            // 참가자 목록 아코디언 (ExpansionTile)
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: ExpansionTile(
+                title: const Text('참가자 목록 확인', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                leading: const Icon(Icons.list_alt, color: Colors.blueAccent),
+                shape: const Border(), // 펼쳤을 때 생기는 기본 테두리 제거
+                onExpansionChanged: (expanded) {
+                  if (expanded) {
+                    _fetchParticipants(); // 타일이 펼쳐질 때 API 호출
+                  }
+                },
+                children: [
+                  if (_isLoadingParticipants)
+                    const Padding(
+                      padding: EdgeInsets.all(20.0),
+                      child: CircularProgressIndicator(),
+                    )
+                  else if (_participantList.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.all(20.0),
+                      child: Text('참여자가 없습니다.', style: TextStyle(color: Colors.grey)),
+                    )
+                  else
+                    ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(), // 부모 스크롤과 충돌 방지
+                      itemCount: _participantList.length,
+                      separatorBuilder: (context, index) => const Divider(height: 1),
+                      itemBuilder: (context, index) {
+                        final participant = _participantList[index];
+                        String name = participant['memberName'] ?? '이름 없음';
+                        String classNoStr = participant['classNo']?.toString() ?? '';
+                        String displayClass = '';
+                        if (classNoStr == '0') {
+                          displayClass = '본부';
+                        } else if (classNoStr.isNotEmpty) {
+                          displayClass = '${classNoStr}기';
+                        }
+                        String rankTitle = participant['rankTitlekor']?.toString() ?? '';
+                        String info = '';
+                        if (displayClass.isNotEmpty && rankTitle.isNotEmpty) {
+                          info = '$displayClass / $rankTitle';
+                        } else if (displayClass.isNotEmpty) {
+                          info = displayClass;
+                        } else if (rankTitle.isNotEmpty) {
+                          info = rankTitle;
+                        }
+                        String memberNoStr = participant['memberNo']?.toString() ?? '';
+                        Widget avatarWidget;
+                        if (memberNoStr.isNotEmpty) {
+                          String photoUrl = 'https://chyaddr.chycollege.kr/static/img/members/mphoto_$memberNoStr.png';
+                          avatarWidget = SizedBox(
+                            width: 40,
+                            height: 40,
+                            child: ClipOval(
+                              child: Image.network(
+                                photoUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return CircleAvatar(
+                                    backgroundColor: Colors.green.shade100,
+                                    child: const Icon(Icons.person, color: Colors.green),
+                                  );
+                                },
+                              ),
+                            ),
+                          );
+                        } else {
+                          avatarWidget = CircleAvatar(
+                            backgroundColor: Colors.green.shade100,
+                            child: const Icon(Icons.person, color: Colors.green),
+                          );
+                        }
+                        return ListTile(
+                          leading: avatarWidget,
+                          title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                          subtitle: info.isNotEmpty ? Text(info) : null,
+                        );
+                      },
+                    ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 10),
 
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -253,15 +397,14 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               ],
             ),
 
-            const SizedBox(height: 40),
+            const SizedBox(height: 30),
 
-            // 4. 참석/불참 버튼 (상태에 따라 동적 렌더링)
+            // 참석/불참 버튼
             SizedBox(
               width: double.infinity,
               height: 50,
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  // 로딩 중이거나 미참석이면 녹색, 참석 중이면 붉은색
                   backgroundColor: _isLoadingAttendance ? Colors.grey : (_isAttending ? Colors.redAccent : Colors.green),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
